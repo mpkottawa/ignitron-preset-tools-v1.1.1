@@ -37,6 +37,7 @@ separately, then choose that folder from the app dashboard. [IGNITRON LATEST REL
 
 Required:
 
+- Ignitron Firmware Edits (2 files)
 - Windows 10/11 or macOS
 - PlatformIO Core
 - Ignitron firmware project downloaded separately
