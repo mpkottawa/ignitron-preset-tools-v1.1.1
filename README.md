@@ -9,7 +9,12 @@ https://github.com/stangreg/Ignitron
 
 ## Download
 
-Download the packaged app zip from this repo:
+Download the packaged app from the GitHub Releases page:
+
+- Windows: `Ignitron Preset Tools v1.1.1-windows.zip`
+- macOS: `Ignitron Preset Tools v1.1.1-macos.zip`
+
+There is also a Windows zip checked into this repo as a fallback:
 
 `releases/Ignitron Preset Tools v1.1.1.zip`
 
@@ -19,6 +24,10 @@ Extract the whole zip, then run:
 
 Do not move the `.exe` away from the `_internal` folder. If you want it on your
 desktop, create a shortcut to the exe instead.
+
+On macOS, extract the zip and open the `.app`. The Mac app is unsigned, so macOS
+may ask for confirmation the first time. Right-click the app, choose Open, then
+confirm.
 
 ## What Is Included
 
