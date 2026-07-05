@@ -20,7 +20,7 @@ Direct downloads:
 - [macOS zip](https://github.com/mpkottawa/ignitron-preset-tools-v1.1.1/releases/download/v1.1.1/Ignitron.Preset.Tools.v1.1.1-macos.zip)
 
 The Ignitron firmware project is not bundled. Download or clone the firmware
-separately, then choose that folder from the app dashboard.
+separately, then choose that folder from the app dashboard. [IGNITRON LATEST RELEASE](https://github.com/stangreg/Ignitron/releases)
 
 ## What The App Does
 
