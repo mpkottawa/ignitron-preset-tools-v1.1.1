@@ -51,20 +51,18 @@ The first PlatformIO build or upload may require internet access so PlatformIO
 can download the ESP32 platform, toolchain, and Arduino libraries.
 
 
------------------------------------------------
+## Firmware Compatibility
 
-FIRMWARE SETUP
----
-To enable the Ignitron pedal to pull current pedal presets(by responding to the calls: LISTPRESETS and LISTBANKS), as well as stream presets from the app, two firmware files must be modified:
+To enable the Ignitron pedal to pull current pedal presets by responding to `LISTPRESETS` and `LISTBANKS`, and to stream presets from the Spark app, two firmware files must be modified:
 
-- `ignitron.ino` (main Ignitron folder) → **3 edits**  
-- `SparkPresetControl.cpp` (in `/src` folder) → **1 edit**
+- `Ignitron.ino` in the main Ignitron folder: **3 edits**
+- `SparkPresetControl.cpp` in the `/src` folder: **1 edit**
 
 You can either manually edit these files as described below, or replace them entirely with provided versions and update pedal-specific bits (pins, LEDs, display, etc.).
 
 ---
 
-## A. Preset Pulling Configuration(3 edits)  
+### A. Preset Pulling Configuration
 (edit the file: `/ignitron/ignitron.ino`)
 
 ### 1. Add this include at the top with the other libraries (around line 8):
@@ -85,7 +83,7 @@ handleSerialCommands();   // so it will react to LISTPRESETS
 ```cpp
 // === BEGIN: LISTPRESETS serial support =======================================
 
-// Case-insensitive “.json” check
+// Case-insensitive ".json" check
 static bool hasJsonExt(const char *name) {
   if (!name) return false;
   size_t len = strlen(name);
@@ -115,7 +113,7 @@ static void listAllPresets() {
 
   File root = LittleFS.open("/");
   if (!root) {
-    Serial.println("⚠️ Could not open LittleFS root");
+    Serial.println("Could not open LittleFS root");
     Serial.println("LISTPRESETS_DONE");
     return;
   }
@@ -170,7 +168,7 @@ static void handleSerialCommands() {
           Serial.println("LISTBANKS_DONE");
           f.close();
         } else {
-          Serial.println("⚠️ PresetList.txt not found");
+          Serial.println("PresetList.txt not found");
           Serial.println("LISTBANKS_DONE");
         }
       }
@@ -188,13 +186,13 @@ static void handleSerialCommands() {
 
 ---
 
-## B. Spark App Streaming Configuration(1 edit)  
+### B. Spark App Streaming Configuration
 (edit `/ignitron/src/SparkPresetControl.cpp`)
 
 Add the following lines **after** `DEBUG_PRINTLN(appReceivedPreset_.json.c_str());` (should be around line 400):
 
 ```cpp
-// 🔧 Added for App Scraper
+// Added for Spark App Capture
 Serial.println("received from app:");
 Serial.println(appReceivedPreset_.json.c_str());
 ```
@@ -208,7 +206,7 @@ void SparkPresetControl::updateFromSparkResponseAmpPreset(char *presetJson) {
     DEBUG_PRINTLN("received from app:");
     DEBUG_PRINTLN(appReceivedPreset_.json.c_str());
 
-    // 🔧 Added for App Scraper
+    // Added for Spark App Capture
     Serial.println("received from app:");
     Serial.println(appReceivedPreset_.json.c_str());
 
@@ -219,36 +217,31 @@ void SparkPresetControl::updateFromSparkResponseAmpPreset(char *presetJson) {
 
 ---
 
-## C. optional- AMP Mode Toggle Switch Configuration(2 edits)
+### C. Optional Amp Mode Rocker Switch Configuration
 
-I found it a pain to always hold switch 1 to enter AMP mode.  use this mod to automatically handle it.  To add a toggle switch for AMP mode (spst 2 way rocker switch),\:
+This optional mod lets a physical SPST rocker switch choose AMP mode at boot.
 
-connect one side of the switch to gpio pin 35 of the esp32. On that same pin, put a 10k ohm resistor in series with a wire to 3.3volts on the board.  the other side of the switch, run to ground.
----
+Connect one side of the switch to GPIO35 on the ESP32. On that same pin, add a 10k pull-up resistor to 3.3V. Connect the other side of the switch to ground.
 
-  to enable allowing a rocker switch to activate AMP mode any time it boots up, modify ignitron firmware by modifying one file in 2 spots, ignitron.ino in the root folder (/ignitron/ignitron.ino).  
+To enable the rocker switch, modify the Ignitron firmware in the spots below.
 
-1.
-add this after the first string of includes in ignitron.ino:
----
+1. Add this after the first string of includes in `Ignitron.ino`:
 
-```
+```cpp
 #ifndef AMP_MODE_SWITCH_PIN
-#define AMP_MODE_SWITCH_PIN 34    // <- change to the GPIO you wired; SPST to GND
+#define AMP_MODE_SWITCH_PIN 35    // GPIO35 with external 10k pull-up, SPST to GND
 #endif
 ```
-----------------------------------------------------------------
 
-2.
-in /ignitron/ignitron.ino, at around line 59, the next line after: 
+2. In `Ignitron.ino`, add the rocker check immediately after:
        
 ```
 operationMode = spark_bh.checkBootOperationMode(); 
 ```
 
-add the following:
+Add the following:
 
-```
+```cpp
     // --- Amp Mode toggle on GPIO35 ---  
      pinMode(AMP_MODE_SWITCH_PIN, INPUT);  // external 10k pull-up to 3.3V, switch to GND
 
@@ -256,13 +249,23 @@ add the following:
 
      if (_ampToggleState == LOW) {
          operationMode = SPARK_MODE_AMP;   // force Amp Mode
-         Serial.println("Amp toggle ON → forcing AMP mode");
+         Serial.println("Amp toggle ON - forcing AMP mode");
      } else {
-         Serial.println("Amp toggle OFF → normal boot");
+         Serial.println("Amp toggle OFF - normal boot");
      }
 ```
 
----------------------------------------------------------------
+3. If the pedal still boots into AMP mode when the rocker is off, the saved Spark mode file may be overriding the boot mode. In `src/SparkDataControl.cpp`, wrap the existing `readOpModeFromFile();` call so it is skipped when the rocker feature is enabled:
+
+```cpp
+#if defined(ENABLE_AMP_MODE_ROCKER_SWITCH)
+    Serial.println("Physical boot mode controls enabled; ignoring saved Spark mode file.");
+#else
+    readOpModeFromFile();
+#endif
+```
+
+The app's Firmware Settings tab can also enable the rocker option and save the GPIO pin in `src/Config_Definitions.h`.
 
 
 ## Installation
